@@ -4,12 +4,13 @@ LABEL auther="guox@goodrain.com"
 
 WORKDIR /app
 
+# 文件的变更是最频繁的变更，把拷贝文件的过程放在安装软件包、下载大体积资源的后面，可以更合理的利用镜像构建缓存，极大的节约构建时间
+ADD . .
+
 # 安装必要的依赖
 # 安装 docker k3s kubectl
 # 根据构建环境的 CPU 架构区分下载地址
-RUN sed -i -e 's/ports.ubuntu.com/mirrors.aliyun.com/g' \
-    -e 's/archive.ubuntu.com/mirrors.aliyun.com/g' \
-    -e 's/security.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list \
+RUN cp -rf utils/sources.list /etc/apt/sources.list \
     && apt update \
     && apt install -y supervisor iptables wget vim \
     && rm -rf /var/lib/apt/lists/*
@@ -34,9 +35,6 @@ RUN Arch="$(arch)"; \
     && wget -O /usr/local/bin/k3s "$k3s_url" \
     && wget -O /usr/local/bin/kubectl "$kubectl_url" 
 
-# 文件的变更是最频繁的变更，把拷贝文件的过程放在安装软件包、下载大体积资源的后面，可以更合理的利用镜像构建缓存，极大的节约构建时间
-ADD . .
-
 RUN chmod +x /usr/local/bin/k3s /usr/local/bin/kubectl /app/docker-entrypoint.sh \
     && mkdir -p /app/logs/ /app/k3s \
     && cp utils/dind.conf /etc/supervisor/conf.d/dind.conf \
@@ -45,7 +43,7 @@ RUN chmod +x /usr/local/bin/k3s /usr/local/bin/kubectl /app/docker-entrypoint.sh
     && cp utils/supervisord.conf /etc/supervisor/supervisord.conf
    
 
-VOLUME [ "/var/lib/docker", "/app/k3s" ]
+#VOLUME [ "/var/lib/docker", "/app/k3s" ]
  
 ENTRYPOINT [ "/app/docker-entrypoint.sh" ]
 CMD ["/usr/bin/supervisord"]
